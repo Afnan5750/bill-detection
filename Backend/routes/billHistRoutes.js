@@ -1,34 +1,35 @@
+// billHistRoutes.js
 import express from "express";
 import fetch from "node-fetch";
 
 const router = express.Router();
 
-router.post("/fetchBill", async (req, res) => {
+// 🔹 Route to fetch bill history from PITC DetectionBill API
+router.post("/billHistory", async (req, res) => {
   const { refNo } = req.body;
 
-  if (!refNo || refNo.length < 4) {
-    return res.status(400).json({ error: "Invalid reference number" });
+  if (!refNo) {
+    return res.status(400).json({ error: "Reference number is required" });
   }
 
-  const companyCode = refNo.slice(2, 4);
-
   try {
-    const response = await fetch("https://bill.pitc.com.pk/bill/info", {
+    const response = await fetch("https://detectionbill.pitc.com.pk/api/Consumption/GetConsumption", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        refNo: refNo,
-        secret_token: "token_4usaid_security",
-        app_name: "DetectionOnline",
-        companyCode: companyCode,
-      }),
+      body: JSON.stringify({ REFERENCE_NO: refNo }),
     });
 
     const data = await response.json();
-    res.status(200).json(data);
+
+    if (!data || data.STATUS !== 1) {
+      return res.status(404).json({ message: "No bill history found for this reference number." });
+    }
+
+    // Return only the bill history data
+    res.status(200).json(data.DATA);
   } catch (error) {
-    console.error("Error fetching bill:", error);
-    res.status(500).json({ error: "Failed to fetch data from PITC API" });
+    console.error("Error fetching bill history:", error);
+    res.status(500).json({ error: "Failed to fetch bill history from PITC API" });
   }
 });
 

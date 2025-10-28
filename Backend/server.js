@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import detectionRoutes from "./routes/detectionRoutes.js";
 import tariffRoutes from "./routes/tariffRoutes.js";
 import reasonRoutes from "./routes/reasonRoutes.js";
+import billDetailsRoutes from "./routes/billDetailsRoutes.js";
 import billHistRoutes from "./routes/billHistRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import db from "./db.js";
@@ -19,7 +20,8 @@ app.use(bodyParser.json());
 app.use("/api", detectionRoutes);
 app.use("/api", tariffRoutes);
 app.use("/api", reasonRoutes);
-app.use("/api", billHistRoutes);
+app.use("/api", billDetailsRoutes);
+app.use("/api", billHistRoutes)
 app.use("/api", authRoutes);
 
 const PORT = process.env.PORT || 5000;

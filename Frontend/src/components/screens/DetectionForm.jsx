@@ -352,7 +352,7 @@ const DetectionForm = () => {
                       setLoading(true);
                       try {
                         const res = await fetch(
-                          "http://localhost:5000/api/fetchBill",
+                          "http://localhost:5000/api/billDetails",
                           {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },

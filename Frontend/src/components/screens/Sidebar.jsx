@@ -49,7 +49,7 @@ const Sidebar = () => {
             to="/detection"
             style={({ isActive }) => style.link(isActive)}
           >
-            <MdAssignment style={{ marginRight: "8px" }} />
+            <MdAssignment style={{ marginRight: "8px", fontSize: "1.2rem" }} />
             Detection Form
           </NavLink>
         </li>
@@ -58,7 +58,7 @@ const Sidebar = () => {
             to="/detection-list"
             style={({ isActive }) => style.link(isActive)}
           >
-            <MdList style={{ marginRight: "8px" }} />
+            <MdList style={{ marginRight: "8px", fontSize: "1.2rem" }} />
             Detection List
           </NavLink>
         </li>
