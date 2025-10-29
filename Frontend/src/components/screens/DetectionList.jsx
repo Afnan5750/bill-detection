@@ -39,43 +39,43 @@ const DetectionList = () => {
       name: "Ref No",
       selector: (row) => row.refno,
       sortable: true,
-      width: "180px",
+      width: "12vw",
     },
     {
       name: "Consumer Name",
       selector: (row) => row.cons_name,
       sortable: true,
-      width: "225px",
+      width: "14vw",
     },
     {
       name: "Sanction Load",
       selector: (row) => row.sanction_load,
-      width: "100px",
+      width: "8vw",
     },
     {
       name: "Connected Load",
       selector: (row) => row.connected_load,
-      width: "100px",
+      width: "8vw",
     },
     {
       name: "Charging Period Days",
       selector: (row) => row.charging_prd_days,
-      width: "100px",
+      width: "9vw",
     },
     {
       name: "Units Assessed",
       selector: (row) => row.units_assessed,
-      width: "100px",
+      width: "8vw",
     },
     {
       name: "Units Already Charged",
       selector: (row) => row.units_already_charged,
-      width: "100px",
+      width: "9vw",
     },
     {
       name: "Units Chargeable",
       selector: (row) => row.units_chargeable,
-      width: "100px",
+      width: "8vw",
     },
     {
       name: "Actions",
@@ -91,7 +91,7 @@ const DetectionList = () => {
       ignoreRowClick: true,
       allowOverflow: true,
       button: true,
-      width: "100px",
+      width: "6vw",
     },
   ];
 

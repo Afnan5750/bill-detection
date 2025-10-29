@@ -25,50 +25,42 @@ function monthYearToDateString(monthYear) {
 
   monthYear = monthYear.trim();
 
-  // ✅ Case 1: Format is "YYYY-MM"
+  // ✅ Handles format "2024-Oct" or "2024-Oct "
+  const yearAbbrMatch = monthYear.match(/^(\d{4})[-/]([A-Za-z]{3})$/);
+  if (yearAbbrMatch) {
+    const [_, year, mon] = yearAbbrMatch;
+    const months = {
+      Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+      Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+    };
+    const month =
+      months[mon.charAt(0).toUpperCase() + mon.slice(1, 3).toLowerCase()];
+    return month ? `${year}-${month}-01` : null;
+  }
+
+  // ✅ Handles format "YYYY-MM" (2024-10)
   const yearMonthMatch = monthYear.match(/^(\d{4})[-/](\d{2})$/);
   if (yearMonthMatch) {
     const [_, year, month] = yearMonthMatch;
     return `${year}-${month}-01`;
   }
 
-  // ✅ Case 2: Format is "MMM-YY" or "MMM-YYYY"
-  monthYear =
-    monthYear.charAt(0).toUpperCase() +
-    monthYear.slice(1, 3).toLowerCase() +
-    monthYear.slice(3);
-
-  const [mon, yr] = monthYear.split("-");
-  const months = {
-    Jan: "01",
-    Feb: "02",
-    Mar: "03",
-    Apr: "04",
-    May: "05",
-    Jun: "06",
-    Jul: "07",
-    Aug: "08",
-    Sep: "09",
-    Oct: "10",
-    Nov: "11",
-    Dec: "12",
-  };
-
-  const month = months[mon];
-  if (!month) {
-    console.warn("⚠️ Invalid month format:", monthYear);
-    return null;
+  // ✅ Handles format "MMM-YYYY" (Oct-2024)
+  const monthYearMatch = monthYear.match(/^([A-Za-z]{3})[-/](\d{4})$/);
+  if (monthYearMatch) {
+    const [_, mon, year] = monthYearMatch;
+    const months = {
+      Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+      Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12",
+    };
+    const month =
+      months[mon.charAt(0).toUpperCase() + mon.slice(1, 3).toLowerCase()];
+    return month ? `${year}-${month}-01` : null;
   }
 
-  let year = yr;
-  if (year.length === 2) year = `20${year}`;
-  if (year.length !== 4 || isNaN(year)) {
-    console.warn("⚠️ Invalid year format:", monthYear);
-    return null;
-  }
-
-  return `${year}-${month}-01`;
+  return null;
 }
+
 
 router.post("/submit", (req, res) => {
   const {

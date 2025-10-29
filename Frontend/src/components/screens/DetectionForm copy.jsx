@@ -99,6 +99,16 @@ const DetectionForm = () => {
         return value >= 0; // error if negative
       }
     ),
+
+    tempAppliance: Yup.string().required("Select an appliance"),
+    tempQuantity: Yup.number()
+      .typeError("Must be a number")
+      .positive("Must be > 0")
+      .required("Required"),
+    tempWatts: Yup.number()
+      .typeError("Must be a number")
+      .positive("Must be > 0")
+      .required("Required"),
   });
 
   useEffect(() => {
@@ -234,7 +244,6 @@ const DetectionForm = () => {
                     alert(data.message);
                     if (!id) {
                       resetForm();
-                      setAppliances([]);
                     } else {
                       navigate("/detection-list");
                     }
@@ -535,24 +544,15 @@ const DetectionForm = () => {
                             </label>
                             <button
                               type="button"
-                              className="btn btn-sm "
+                              className="btn btn-sm btn-primary"
                               onClick={() => setShowModal(true)}
-                              style={{
-                                backgroundColor: "#800000",
-                                color: "#fff",
-                                borderColor: "#800000",
-                                width: "100px",
-                                borderRadius: "50px",
-                                fontWeight: "600",
-                              }}
                             >
-                              Add
+                              + Add
                             </button>
                           </div>
                           <Field
                             name="connectedLoad"
-                            className="form-control readonly-field"
-                            readOnly
+                            className="form-control"
                           />
                           <ErrorMessage
                             name="connectedLoad"
@@ -839,15 +839,9 @@ const DetectionForm = () => {
                       centered
                       size="lg"
                     >
-                      <Modal.Header
-                        closeButton
-                        className="justify-content-center"
-                      >
-                        <Modal.Title
-                          className="text-center w-100 fw-bold"
-                          style={{ color: "#800000" }}
-                        >
-                          Connected Load Appliances
+                      <Modal.Header closeButton>
+                        <Modal.Title>
+                          Add / Edit Connected Load Appliances
                         </Modal.Title>
                       </Modal.Header>
 
@@ -867,18 +861,11 @@ const DetectionForm = () => {
                               <option value="">-- Select --</option>
                               <option value="Bulbs">Bulbs</option>
                               <option value="Fans">Fans</option>
-                              <option value="AC">Air Conditioners</option>
-                              <option value="Heater">Heaters/Irons</option>
-                              <option value="WashingMachine">
-                                Washing Machines
-                              </option>
-                              <option value="Refrigerator">
-                                Refrigerators
-                              </option>
-                              <option value="LightPlug">Light Plugs</option>
-                              <option value="PowerPlug">Power Plugs</option>
-                              <option value="Motor">Motor</option>
-                              <option value="Area">Area</option>
+                              <option value="AC">AC</option>
+                              <option value="Fridge">Fridge</option>
+                              <option value="TV">TV</option>
+                              <option value="Heater">Heater</option>
+                              <option value="Pump">Pump</option>
                             </Field>
                           </div>
 
@@ -910,16 +897,11 @@ const DetectionForm = () => {
                           <div className="col-md-2">
                             <Button
                               type="button"
+                              variant={
+                                editingIndex === null ? "success" : "primary"
+                              }
                               size="sm"
-                              style={{
-                                backgroundColor: "#800000",
-                                color: "#fff",
-                                borderColor: "#800000",
-                                width: "100px",
-                                height: "40px",
-                                borderRadius: "50px",
-                                fontWeight: 600,
-                              }}
+                              className="w-100"
                               onClick={() => {
                                 const appliance = values.tempAppliance?.trim();
                                 const quantity = Number(values.tempQuantity);
@@ -956,7 +938,7 @@ const DetectionForm = () => {
                                       (s, r) => s + r.totalWatts,
                                       0
                                     ) / 1000
-                                  ).toFixed(3);
+                                  ).toFixed(2);
                                   setFieldValue("connectedLoad", totalKWh);
                                 } else {
                                   // ---- UPDATE EXISTING ----
@@ -977,12 +959,13 @@ const DetectionForm = () => {
                                   }));
                                   setAppliances(renumbered);
 
+                                  // Set connectedLoad in kWh
                                   const totalKWh = (
                                     renumbered.reduce(
                                       (s, r) => s + r.totalWatts,
                                       0
                                     ) / 1000
-                                  ).toFixed(3);
+                                  ).toFixed(2);
                                   setFieldValue("connectedLoad", totalKWh);
 
                                   setEditingIndex(null);
@@ -1007,7 +990,7 @@ const DetectionForm = () => {
                                 <th>Sr.</th>
                                 <th>Appliance</th>
                                 <th>Quantity</th>
-                                <th>Watts</th>
+                                <th>Watts/Unit</th>
                                 <th>Total Watts</th>
                                 <th>Actions</th>
                               </tr>
@@ -1065,7 +1048,7 @@ const DetectionForm = () => {
                                               (s, r) => s + r.totalWatts,
                                               0
                                             ) / 1000
-                                          ).toFixed(3);
+                                          ).toFixed(2);
                                           setFieldValue(
                                             "connectedLoad",
                                             totalKWh
@@ -1080,23 +1063,8 @@ const DetectionForm = () => {
                               )}
                             </tbody>
                             {appliances.length > 0 && (
-                              <tfoot className="fw-bold bg-light">
-                                {/* Total Watts */}
-                                <tr>
-                                  <td colSpan="4" className="text-end">
-                                    Total Watts:
-                                  </td>
-                                  <td>
-                                    {appliances.reduce(
-                                      (s, r) => s + r.totalWatts,
-                                      0
-                                    )}{" "}
-                                    W
-                                  </td>
-                                  <td></td>
-                                </tr>
-                                {/* Total kWh */}
-                                <tr>
+                              <tfoot>
+                                <tr className="fw-bold bg-light">
                                   <td colSpan="4" className="text-end">
                                     Total kWh:
                                   </td>
@@ -1106,8 +1074,7 @@ const DetectionForm = () => {
                                         (s, r) => s + r.totalWatts,
                                         0
                                       ) / 1000
-                                    ).toFixed(3)}{" "}
-                                    kWh
+                                    ).toFixed(2)}
                                   </td>
                                   <td></td>
                                 </tr>
@@ -1116,6 +1083,21 @@ const DetectionForm = () => {
                           </table>
                         </div>
                       </Modal.Body>
+
+                      <Modal.Footer>
+                        <Button
+                          variant="secondary"
+                          onClick={() => {
+                            setFieldValue("tempAppliance", "");
+                            setFieldValue("tempQuantity", "");
+                            setFieldValue("tempWatts", "");
+                            setEditingIndex(null);
+                            setShowModal(false);
+                          }}
+                        >
+                          Close
+                        </Button>
+                      </Modal.Footer>
                     </Modal>
                   </>
                 );
