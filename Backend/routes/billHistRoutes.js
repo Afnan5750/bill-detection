@@ -29,20 +29,35 @@ router.post("/billHistory", async (req, res) => {
     }
 
     const monthNames = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
 
     const formattedData = data.DATA.map((item) => {
       const billMonth = item.BILL_MONTH || "";
-      const year = billMonth.slice(0, 4);
+      const year = parseInt(billMonth.slice(0, 4), 10);
       const monthNum = parseInt(billMonth.slice(4, 6), 10);
       const monthName = monthNames[monthNum - 1] || "N/A";
 
       return {
         ...item,
-        BILL_MONTH: `${year}-${monthName}`, // ✅ formatted
+        year,
+        monthNum,
+        BILL_MONTH: `${monthName}-${year}`,
       };
+    }).sort((a, b) => {
+      if (a.year === b.year) return a.monthNum - b.monthNum;
+      return a.year - b.year;
     });
 
     res.status(200).json(formattedData);

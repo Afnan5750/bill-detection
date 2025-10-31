@@ -5,6 +5,9 @@ import * as Yup from "yup";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import pitcLogo from "../../assets/pitc_logo.png";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import bgImage from "../../assets/signin-bg1.jpg";
 
 const Signin = () => {
   const navigate = useNavigate();
@@ -25,68 +28,48 @@ const Signin = () => {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("userData", JSON.stringify(response.data.data));
 
-        navigate("/detection");  
-        console.log("User Data:", response.data.data);
+        toast.success("Login successful!", {
+          position: "top-right",
+          autoClose: 1000,
+        });
+
+        setTimeout(() => navigate("/detection"), 1000);
       } else {
-        alert("Invalid credentials!");
+        toast.error("Invalid credentials!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
       }
     } catch (error) {
       console.error("Login error:", error);
-      alert("Login failed! Please check your User ID and password.");
+      toast.error("Login failed! Please check your User ID and password.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } finally {
       setSubmitting(false);
     }
   };
-  // const handleSubmit = async (values, { setSubmitting }) => {
-  //   const { userId, password } = values;
-
-  //   try {
-  //     const adminKey = btoa("super_admin_access_2025");
-  //     const encodedUser = btoa(userId);
-  //     const encodedPass = btoa(password);
-
-  //     if (
-  //       encodedUser === btoa("admin_master") &&
-  //       encodedPass === btoa("Admin@12345")
-  //     ) {
-  //       const adminData = {
-  //         user_id: "admin_master",
-  //         user_name: "System Administrator",
-  //         role_id: "admin",
-  //         auth_key: adminKey,
-  //       };
-
-  //       localStorage.setItem("isLoggedIn", "true");
-  //       localStorage.setItem("userData", JSON.stringify(adminData));
-  //       navigate("/detection");
-  //       return;
-  //     }
-
-  //     const response = await axios.post("http://localhost:5000/api/login", {
-  //       user_id: userId,
-  //       pwd: password,
-  //     });
-
-  //     if (response.data?.data) {
-  //       localStorage.setItem("isLoggedIn", "true");
-  //       localStorage.setItem("userData", JSON.stringify(response.data.data));
-  //       navigate("/detection");
-  //     } else {
-  //       alert("Invalid credentials");
-  //     }
-  //   } catch (error) {
-  //     console.error("Login error:", error);
-  //     alert("Login failed. Please check your credentials.");
-  //   } finally {
-  //     setSubmitting(false);
-  //   }
-  // };
 
   return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
+    <div
+      className="d-flex align-items-center justify-content-center min-vh-100"
+      style={{
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
       <div
         className="card shadow p-4 position-relative"
-        style={{ width: "100%", maxWidth: "400px" }}
+        style={{
+          width: "100%",
+          maxWidth: "400px",
+          backgroundColor: "white",
+          backdropFilter: "blur(5px)",
+          borderRadius: "15px",
+        }}
       >
         <div
           style={{
@@ -167,6 +150,8 @@ const Signin = () => {
           </Formik>
         </div>
       </div>
+
+      <ToastContainer />
     </div>
   );
 };

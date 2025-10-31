@@ -7,6 +7,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const DetectionForm = () => {
   const [reasonList, setReasonList] = useState([]);
@@ -19,13 +21,11 @@ const DetectionForm = () => {
   const [showModal, setShowModal] = useState(false);
   const [appliances, setAppliances] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
+  const [loadFactor, setLoadFactor] = useState(null);
 
   const handleLogout = () => {
-    const confirmLogout = window.confirm("Are you sure you want to logout?");
-    if (confirmLogout) {
-      localStorage.clear();
-      window.location.href = "/login";
-    }
+    localStorage.clear();
+    window.location.href = "/sigin";
   };
   const style = {
     container: {
@@ -75,29 +75,36 @@ const DetectionForm = () => {
     refNo: Yup.string()
       .length(14, "Reference No must be 14 digits")
       .required("Reference No is required"),
-    connectedLoad: Yup.string().required("Connected Load is required"),
+
+    connectedLoad: Yup.number()
+      .typeError("Must be a number")
+      .min(0, "Connected load cannot be negative")
+      .required("Connected Load is required"),
+
+    charging_prd_days: Yup.number()
+      .typeError("Must be a number")
+      .min(1, "Charging period must be at least 1 month")
+      .required("Charging Period is required"),
+
+    totalUnitsChargeable: Yup.number()
+      .typeError("Must be a number")
+      .min(0, "Units cannot be negative")
+      .required("Total Units Chargeable is required"),
+
     checkedBy: Yup.string().required("Checked By is required"),
     observation: Yup.string().required("Observation is required"),
     basisOfAssessment: Yup.string().required("Basis of Assessment is required"),
-    totalUnitsChargeable: Yup.number()
-      .typeError("Must be a number")
-      .required("Total Units Chargeable is required"),
     noticeIssueNo: Yup.string().required("Notice Issue No is required"),
     noticeDate: Yup.date().required("Notice Date is required"),
     det_start_dt: Yup.date().required("Start date is required"),
     det_end_dt: Yup.date()
       .required("End date is required")
       .min(Yup.ref("det_start_dt"), "End date must be after start date"),
-    charging_prd_days: Yup.number()
-      .typeError("Days must be a number")
-      .min(1, "Days cannot be 0 or less")
-      .required("Charging Period is required"),
+
     unitsChargeable: Yup.number().test(
       "non-negative",
       "Units Chargeable cannot be negative",
-      function (value) {
-        return value >= 0; // error if negative
-      }
+      (v) => v >= 0
     ),
   });
 
@@ -231,19 +238,24 @@ const DetectionForm = () => {
                   const data = await res.json();
 
                   if (res.ok) {
-                    alert(data.message);
+                    toast.success(data.message, { autoClose: 2000 });
+
                     if (!id) {
                       resetForm();
                       setAppliances([]);
                     } else {
-                      navigate("/detection-list");
+                      setTimeout(() => {
+                        navigate("/detection-list");
+                      }, 1000);
                     }
                   } else {
-                    alert("Error storing form data: " + data.message);
+                    toast.error("Error storing form data: " + data.message, {
+                      autoClose: 3000,
+                    });
                   }
                 } catch (err) {
                   console.error("Error submitting form:", err);
-                  alert("Form submission failed");
+                  toast.error("Form submission failed", { autoClose: 3000 });
                 }
               }}
             >
@@ -360,7 +372,6 @@ const DetectionForm = () => {
                     const fetchOnlineData = async () => {
                       setLoading(true);
                       try {
-                        // 1️⃣ Fetch bill details
                         const billRes = await fetch(
                           "http://localhost:5000/api/billDetails",
                           {
@@ -404,7 +415,6 @@ const DetectionForm = () => {
                           setRefError("Reference number not found");
                         }
 
-                        // 2️⃣ Fetch bill history (NEW)
                         const histRes = await fetch(
                           "http://localhost:5000/api/billHistory",
                           {
@@ -421,7 +431,6 @@ const DetectionForm = () => {
                           Array.isArray(histData) &&
                           histData.length > 0
                         ) {
-                          // Normalize format for table
                           const formattedHistory = histData.map((item) => ({
                             month: item.BILL_MONTH || item.MONTH || "N/A",
                             units: item.UNITS || item.UNITS_CHARGED || "0",
@@ -452,10 +461,11 @@ const DetectionForm = () => {
                     : null;
 
                   if (start && end) {
-                    const diffDays = Math.ceil(
-                      (end - start) / (1000 * 60 * 60 * 24)
-                    );
-                    setFieldValue("charging_prd_days", diffDays);
+                    let months =
+                      (end.getFullYear() - start.getFullYear()) * 12 +
+                      (end.getMonth() - start.getMonth());
+
+                    setFieldValue("charging_prd_days", months);
                   } else {
                     setFieldValue("charging_prd_days", "");
                   }
@@ -469,6 +479,54 @@ const DetectionForm = () => {
                 }, [
                   values.totalUnitsAlreadyCharged,
                   values.totalUnitsChargeable,
+                ]);
+
+                useEffect(() => {
+                  const fetchLoadFactor = async () => {
+                    if (!values.tariffCode) {
+                      setLoadFactor(null);
+                      return;
+                    }
+
+                    try {
+                      const res = await fetch(
+                        `http://localhost:5000/api/getLoadFactor/${values.tariffCode}`
+                      );
+                      const data = await res.json();
+
+                      if (res.ok && data.data?.load_factor) {
+                        setLoadFactor(parseFloat(data.data.load_factor));
+                      } else {
+                        setLoadFactor(null);
+                        toast.warn("Load factor not found for this tariff");
+                      }
+                    } catch (err) {
+                      console.error("Error fetching load factor:", err);
+                      setLoadFactor(null);
+                    }
+                  };
+
+                  fetchLoadFactor();
+                }, [values.tariffCode]);
+
+                useEffect(() => {
+                  const connected = parseFloat(values.connectedLoad) || 0;
+                  const days = parseFloat(values.charging_prd_days) || 0;
+
+                  if (connected > 0 && loadFactor && days > 0) {
+                    const totalUnits = connected * loadFactor * days * 730;
+                    setFieldValue(
+                      "totalUnitsChargeable",
+                      Math.round(totalUnits)
+                    );
+                  } else {
+                    setFieldValue("totalUnitsChargeable", "");
+                  }
+                }, [
+                  values.connectedLoad,
+                  loadFactor,
+                  values.charging_prd_days,
+                  setFieldValue,
                 ]);
 
                 return (
@@ -674,7 +732,7 @@ const DetectionForm = () => {
                       <div className="row mb-3">
                         <div className="col-md-6">
                           <label className="form-label fw-bold">
-                            Charging Period (Days):
+                            Charging Period (Months):
                           </label>
                           <Field
                             name="charging_prd_days"
@@ -696,12 +754,41 @@ const DetectionForm = () => {
                             name="totalUnitsChargeable"
                             type="number"
                             className="form-control"
+                            readOnly
+                            style={{ backgroundColor: "#f0f0f0" }}
                           />
                           <ErrorMessage
                             name="totalUnitsChargeable"
                             component="div"
                             className="text-danger small"
                           />
+
+                          {loadFactor &&
+                            values.connectedLoad &&
+                            values.charging_prd_days && (
+                              <div className="mt-2 p-2 bg-light border rounded small">
+                                <strong>Formula:</strong>
+                                <br />
+                                <code>
+                                  {values.connectedLoad} × {loadFactor} ×{" "}
+                                  {values.charging_prd_days} × 730
+                                  {" = "}
+                                  <span className="text-primary fw-bold">
+                                    {Math.round(
+                                      values.connectedLoad *
+                                        loadFactor *
+                                        values.charging_prd_days *
+                                        730
+                                    )}
+                                  </span>
+                                </code>
+                                <br />
+                                <small className="text-muted">
+                                  Connected Load (kW) × Load Factor × Months ×
+                                  730 hrs/month
+                                </small>
+                              </div>
+                            )}
                         </div>
                       </div>
 
@@ -771,45 +858,46 @@ const DetectionForm = () => {
                           >
                             CONSUMPTION DATA
                           </h4>
+
                           <table className="table table-bordered mt-3 text-center">
                             <thead>
                               <tr>
-                                <th>Month/Year</th>
-                                <th>Units Charged</th>
-                                <th className="bg-light"></th>
-                                <th>Month/Year</th>
-                                <th>Units Charged</th>
-                                <th className="bg-light"></th>
-                                <th>Month/Year</th>
-                                <th>Units Charged</th>
+                                {Array.from({
+                                  length: Math.ceil(billHistory.length / 12),
+                                }).map((_, colIndex, arr) => (
+                                  <React.Fragment key={`head-${colIndex}`}>
+                                    <th>Month/Year</th>
+                                    <th>Units Charged</th>
+                                    {colIndex < arr.length - 1 && (
+                                      <th className="bg-light"></th>
+                                    )}
+                                  </React.Fragment>
+                                ))}
                               </tr>
                             </thead>
-                            <tbody>
-                              {Array.from({
-                                length: Math.ceil(billHistory.length / 3),
-                              }).map((_, rowIndex) => {
-                                const itemsPerCol = Math.ceil(
-                                  billHistory.length / 3
-                                );
-                                return (
-                                  <tr key={`row-${rowIndex}`}>
-                                    {[0, 1, 2].map((colIndex) => {
-                                      const itemIndex =
-                                        rowIndex + colIndex * itemsPerCol;
-                                      const item = billHistory[itemIndex];
-                                      const cellKey = `cell-${rowIndex}-${colIndex}`;
 
-                                      return (
-                                        <React.Fragment key={cellKey}>
-                                          <td>{item?.month || ""}</td>
-                                          <td>{item?.units || ""}</td>
+                            <tbody>
+                              {Array.from({ length: 12 }).map((_, rowIndex) => (
+                                <tr key={`row-${rowIndex}`}>
+                                  {Array.from({
+                                    length: Math.ceil(billHistory.length / 12),
+                                  }).map((_, colIndex, arr) => {
+                                    const itemIndex = rowIndex + colIndex * 12;
+                                    const item = billHistory[itemIndex];
+                                    return (
+                                      <React.Fragment
+                                        key={`cell-${rowIndex}-${colIndex}`}
+                                      >
+                                        <td>{item?.month || ""}</td>
+                                        <td>{item?.units || ""}</td>
+                                        {colIndex < arr.length - 1 && (
                                           <td className="bg-light"></td>
-                                        </React.Fragment>
-                                      );
-                                    })}
-                                  </tr>
-                                );
-                              })}
+                                        )}
+                                      </React.Fragment>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
                             </tbody>
                           </table>
                         </>
@@ -852,9 +940,7 @@ const DetectionForm = () => {
                       </Modal.Header>
 
                       <Modal.Body>
-                        {/* ---- Add / Edit Row Form ---- */}
                         <div className="row g-3 align-items-end mb-3">
-                          {/* Appliance */}
                           <div className="col-md-4">
                             <label className="form-label fw-bold">
                               Appliance
@@ -882,7 +968,6 @@ const DetectionForm = () => {
                             </Field>
                           </div>
 
-                          {/* Quantity */}
                           <div className="col-md-3">
                             <label className="form-label fw-bold">
                               Quantity
@@ -895,7 +980,6 @@ const DetectionForm = () => {
                             />
                           </div>
 
-                          {/* Watts */}
                           <div className="col-md-3">
                             <label className="form-label fw-bold">Watts</label>
                             <Field
@@ -906,7 +990,6 @@ const DetectionForm = () => {
                             />
                           </div>
 
-                          {/* Add / Update Button */}
                           <div className="col-md-2">
                             <Button
                               type="button"
@@ -932,14 +1015,15 @@ const DetectionForm = () => {
                                   isNaN(watts) ||
                                   watts <= 0
                                 ) {
-                                  alert("Please fill all fields correctly");
+                                  toast.error(
+                                    "Please fill all fields correctly"
+                                  );
                                   return;
                                 }
 
                                 const totalWatts = quantity * watts;
 
                                 if (editingIndex === null) {
-                                  // ---- ADD NEW ----
                                   const newRow = {
                                     sr: appliances.length + 1,
                                     appliance,
@@ -950,7 +1034,6 @@ const DetectionForm = () => {
                                   const updated = [...appliances, newRow];
                                   setAppliances(updated);
 
-                                  // Set connectedLoad in kWh
                                   const totalKWh = (
                                     updated.reduce(
                                       (s, r) => s + r.totalWatts,
@@ -959,7 +1042,6 @@ const DetectionForm = () => {
                                   ).toFixed(3);
                                   setFieldValue("connectedLoad", totalKWh);
                                 } else {
-                                  // ---- UPDATE EXISTING ----
                                   const updated = appliances.map((r, i) =>
                                     i === editingIndex
                                       ? {
@@ -988,7 +1070,6 @@ const DetectionForm = () => {
                                   setEditingIndex(null);
                                 }
 
-                                // reset temp fields
                                 setFieldValue("tempAppliance", "");
                                 setFieldValue("tempQuantity", "");
                                 setFieldValue("tempWatts", "");
@@ -999,7 +1080,6 @@ const DetectionForm = () => {
                           </div>
                         </div>
 
-                        {/* ---- Table ---- */}
                         <div className="table-responsive">
                           <table className="table table-sm table-bordered text-center align-middle">
                             <thead className="table-light">
@@ -1059,7 +1139,6 @@ const DetectionForm = () => {
                                           );
                                           setAppliances(renumbered);
 
-                                          // Update connectedLoad in kWh
                                           const totalKWh = (
                                             renumbered.reduce(
                                               (s, r) => s + r.totalWatts,
@@ -1081,7 +1160,6 @@ const DetectionForm = () => {
                             </tbody>
                             {appliances.length > 0 && (
                               <tfoot className="fw-bold bg-light">
-                                {/* Total Watts */}
                                 <tr>
                                   <td colSpan="4" className="text-end">
                                     Total Watts:
@@ -1095,7 +1173,6 @@ const DetectionForm = () => {
                                   </td>
                                   <td></td>
                                 </tr>
-                                {/* Total kWh */}
                                 <tr>
                                   <td colSpan="4" className="text-end">
                                     Total kWh:
@@ -1124,6 +1201,7 @@ const DetectionForm = () => {
           </div>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 };

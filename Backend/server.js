@@ -8,6 +8,7 @@ import reasonRoutes from "./routes/reasonRoutes.js";
 import billDetailsRoutes from "./routes/billDetailsRoutes.js";
 import billHistRoutes from "./routes/billHistRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import loadFactorRoutes from "./routes/loadFactorRoutes.js";
 import db from "./db.js";
 
 dotenv.config();
@@ -21,8 +22,9 @@ app.use("/api", detectionRoutes);
 app.use("/api", tariffRoutes);
 app.use("/api", reasonRoutes);
 app.use("/api", billDetailsRoutes);
-app.use("/api", billHistRoutes)
+app.use("/api", billHistRoutes);
 app.use("/api", authRoutes);
+app.use("/api", loadFactorRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

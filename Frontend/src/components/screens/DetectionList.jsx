@@ -14,10 +14,8 @@ const DetectionList = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to logout?")) {
-      localStorage.clear();
-      window.location.href = "/signin";
-    }
+    localStorage.clear();
+    window.location.href = "/signin";
   };
 
   useEffect(() => {
@@ -107,8 +105,8 @@ const DetectionList = () => {
     table: { style: { borderRadius: "10px", overflow: "hidden" } },
     headCells: {
       style: {
-        backgroundColor: "#800000",
-        color: "#fff",
+        backgroundColor: "#f3f4f6",
+        color: "#111827",
         fontWeight: "600",
         fontSize: "14px",
         textTransform: "uppercase",
