@@ -40,7 +40,7 @@ const DetectionForm = () => {
       position: "relative",
     },
     btnPrimary: {
-      backgroundColor: "#800000",
+      backgroundColor: "#212529",
       color: "#fff",
       fontWeight: "bold",
       border: "none",
@@ -52,7 +52,7 @@ const DetectionForm = () => {
     heading: {
       textAlign: "center",
       fontWeight: "700",
-      color: "#800000",
+      color: "#212529",
       marginBottom: "1.5rem",
     },
     spinnerOverlay: {
@@ -164,7 +164,7 @@ const DetectionForm = () => {
                 textAlign: "center",
                 fontWeight: "700",
                 fontSize: "1.5rem",
-                color: "#800000",
+                color: "#212529",
               }}
             >
               {id ? "Edit Detection Bill" : "Proforma Detection Bill"}
@@ -596,9 +596,9 @@ const DetectionForm = () => {
                               className="btn btn-sm "
                               onClick={() => setShowModal(true)}
                               style={{
-                                backgroundColor: "#800000",
+                                backgroundColor: "#212529",
                                 color: "#fff",
-                                borderColor: "#800000",
+                                borderColor: "#212529",
                                 width: "100px",
                                 borderRadius: "50px",
                                 fontWeight: "600",
@@ -854,20 +854,28 @@ const DetectionForm = () => {
                         <>
                           <h4
                             className="text-center fw-bold mb-4"
-                            style={{ color: "#800000", marginTop: "30px" }}
+                            style={{ color: "#212529", marginTop: "30px" }}
                           >
                             CONSUMPTION DATA
                           </h4>
 
                           <table className="table table-bordered mt-3 text-center">
-                            <thead>
+                            <thead style={{ backgroundColor: "#afb0b3ff" }}>
                               <tr>
                                 {Array.from({
                                   length: Math.ceil(billHistory.length / 12),
                                 }).map((_, colIndex, arr) => (
                                   <React.Fragment key={`head-${colIndex}`}>
-                                    <th>Month/Year</th>
-                                    <th>Units Charged</th>
+                                    <th
+                                      style={{ backgroundColor: "#afb0b3ff" }}
+                                    >
+                                      Month/Year
+                                    </th>
+                                    <th
+                                      style={{ backgroundColor: "#afb0b3ff" }}
+                                    >
+                                      Units Charged
+                                    </th>
                                     {colIndex < arr.length - 1 && (
                                       <th className="bg-light"></th>
                                     )}
@@ -908,9 +916,9 @@ const DetectionForm = () => {
                           type="submit"
                           className="btn"
                           style={{
-                            backgroundColor: "#800000",
+                            backgroundColor: "#212529",
                             color: "#fff",
-                            borderColor: "#800000",
+                            borderColor: "#212529",
                             width: "250px",
                             borderRadius: "50px",
                             fontWeight: "600",
@@ -933,7 +941,7 @@ const DetectionForm = () => {
                       >
                         <Modal.Title
                           className="text-center w-100 fw-bold"
-                          style={{ color: "#800000" }}
+                          style={{ color: "#212529" }}
                         >
                           Connected Load Appliances
                         </Modal.Title>
@@ -995,9 +1003,9 @@ const DetectionForm = () => {
                               type="button"
                               size="sm"
                               style={{
-                                backgroundColor: "#800000",
+                                backgroundColor: "#212529",
                                 color: "#fff",
-                                borderColor: "#800000",
+                                borderColor: "#212529",
                                 width: "100px",
                                 height: "40px",
                                 borderRadius: "50px",

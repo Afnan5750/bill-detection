@@ -35,7 +35,7 @@ const Sidebar = () => {
       borderRadius: "10px",
       textDecoration: "none",
       fontSize: "0.95rem",
-      color: isActive ? "#111827" : "#6b7280",
+      color: isActive ? "#212529" : "#6b7280",
       backgroundColor: isActive ? "#f3f4f6" : "transparent",
       fontWeight: isActive ? 600 : 500,
       transition: "all 0.25s ease",

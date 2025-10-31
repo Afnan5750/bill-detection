@@ -105,8 +105,8 @@ const DetectionList = () => {
     table: { style: { borderRadius: "10px", overflow: "hidden" } },
     headCells: {
       style: {
-        backgroundColor: "#f3f4f6",
-        color: "#111827",
+        backgroundColor: "#afb0b3ff",
+        color: "#212529",
         fontWeight: "600",
         fontSize: "14px",
         textTransform: "uppercase",
@@ -187,7 +187,7 @@ const DetectionList = () => {
                   textAlign: "center",
                   fontWeight: "700",
                   fontSize: "1.5rem",
-                  color: "#800000",
+                  color: "#212529",
                 }}
               >
                 Detection List
