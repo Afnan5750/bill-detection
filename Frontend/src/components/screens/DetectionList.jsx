@@ -106,7 +106,7 @@ const DetectionList = () => {
     headCells: {
       style: {
         backgroundColor: "#afb0b3ff",
-        color: "#212529",
+        color: "#000000",
         fontWeight: "600",
         fontSize: "14px",
         textTransform: "uppercase",

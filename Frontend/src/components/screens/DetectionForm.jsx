@@ -534,7 +534,7 @@ const DetectionForm = () => {
                     <Form>
                       <div className="mb-3">
                         <label className="form-label fw-bold">
-                          Reference No:
+                          Reference No: <span className="text-danger"> *</span>
                         </label>
                         <Field
                           name="refNo"
@@ -590,6 +590,7 @@ const DetectionForm = () => {
                           <div className="d-flex justify-content-between align-items-center mb-1">
                             <label className="form-label fw-bold mb-0">
                               Connected Load (KWh):
+                              <span className="text-danger"> *</span>
                             </label>
                             <button
                               type="button"
@@ -639,6 +640,7 @@ const DetectionForm = () => {
                         <div className="col-md-6 mb-3">
                           <label className="form-label fw-bold">
                             Observation Made:
+                            <span className="text-danger"> *</span>
                           </label>
                           <Field
                             as="select"
@@ -663,6 +665,7 @@ const DetectionForm = () => {
                       <div className="mb-3">
                         <label className="form-label fw-bold">
                           Basis of Assessment:
+                          <span className="text-danger"> *</span>
                         </label>
                         <Field
                           as="textarea"
@@ -681,7 +684,7 @@ const DetectionForm = () => {
                       <div className="row mb-3">
                         <div className="col-md-4">
                           <label className="form-label fw-bold">
-                            Start Date:
+                            Start Date:<span className="text-danger"> *</span>
                           </label>
                           <Field
                             name="det_start_dt"
@@ -697,7 +700,7 @@ const DetectionForm = () => {
 
                         <div className="col-md-4">
                           <label className="form-label fw-bold">
-                            End Date:
+                            End Date:<span className="text-danger"> *</span>
                           </label>
                           <Field
                             name="det_end_dt"
@@ -739,11 +742,11 @@ const DetectionForm = () => {
                             className="form-control"
                             readOnly
                           />
-                          <ErrorMessage
+                          {/* <ErrorMessage
                             name="charging_prd_days"
                             component="div"
                             className="text-danger small"
-                          />
+                          /> */}
                         </div>
 
                         <div className="col-md-6">
@@ -757,11 +760,11 @@ const DetectionForm = () => {
                             readOnly
                             style={{ backgroundColor: "#f0f0f0" }}
                           />
-                          <ErrorMessage
+                          {/* <ErrorMessage
                             name="totalUnitsChargeable"
                             component="div"
                             className="text-danger small"
-                          />
+                          /> */}
 
                           {loadFactor &&
                             values.connectedLoad &&
@@ -770,7 +773,8 @@ const DetectionForm = () => {
                                 <strong>Formula:</strong>
                                 <br />
                                 <code>
-                                  {values.connectedLoad} × {loadFactor} ×{" "}
+                                  {values.connectedLoad} ×{" "}
+                                  {Number(loadFactor).toFixed(2)} ×{" "}
                                   {values.charging_prd_days} × 730
                                   {" = "}
                                   <span className="text-primary fw-bold">
@@ -824,6 +828,7 @@ const DetectionForm = () => {
                         <div className="col-md-6 mb-3">
                           <label className="form-label fw-bold">
                             Notice Issue No:
+                            <span className="text-danger"> *</span>
                           </label>
                           <Field
                             name="noticeIssueNo"
@@ -836,7 +841,9 @@ const DetectionForm = () => {
                           />
                         </div>
                         <div className="col-md-6 mb-3">
-                          <label className="form-label fw-bold">Dated:</label>
+                          <label className="form-label fw-bold">
+                            Dated:<span className="text-danger"> *</span>
+                          </label>
                           <Field
                             name="noticeDate"
                             type="date"
@@ -951,7 +958,7 @@ const DetectionForm = () => {
                         <div className="row g-3 align-items-end mb-3">
                           <div className="col-md-4">
                             <label className="form-label fw-bold">
-                              Appliance
+                              Appliance <span className="text-danger"> *</span>
                             </label>
                             <Field
                               as="select"
@@ -978,7 +985,7 @@ const DetectionForm = () => {
 
                           <div className="col-md-3">
                             <label className="form-label fw-bold">
-                              Quantity
+                              Quantity<span className="text-danger"> *</span>
                             </label>
                             <Field
                               name="tempQuantity"
@@ -989,7 +996,9 @@ const DetectionForm = () => {
                           </div>
 
                           <div className="col-md-3">
-                            <label className="form-label fw-bold">Watts</label>
+                            <label className="form-label fw-bold">
+                              Watts<span className="text-danger"> *</span>
+                            </label>
                             <Field
                               name="tempWatts"
                               type="number"
