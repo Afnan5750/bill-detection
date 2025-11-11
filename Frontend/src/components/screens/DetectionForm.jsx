@@ -89,6 +89,33 @@ const DetectionForm = () => {
         otherwise: (schema) => schema.nullable().optional(),
       }),
 
+    sancLoad: Yup.number()
+      .typeError("Must be a number")
+      .min(0, "Sanction Load cannot be negative")
+      .when("loadType", {
+        is: "Sanc Load",
+        then: (schema) => schema.required("Sanc. Load is required"),
+        otherwise: (schema) => schema.nullable().optional(),
+      }),
+
+    runningLoad: Yup.number()
+      .typeError("Must be a number")
+      .min(0, "Running Load cannot be negative")
+      .when("loadType", {
+        is: "Running Load",
+        then: (schema) => schema.required("Running Load is required"),
+        otherwise: (schema) => schema.nullable().optional(),
+      }),
+
+    previousHistory: Yup.number()
+      .typeError("Must be a number")
+      .min(0, "Previous History cannot be negative")
+      .when("loadType", {
+        is: "Previous Histoy",
+        then: (schema) => schema.required("Previous History is required"),
+        otherwise: (schema) => schema.nullable().optional(),
+      }),
+
     lumpSump: Yup.number()
       .typeError("Must be a number")
       .min(0, "Lump Sump cannot be negative")
@@ -223,8 +250,11 @@ const DetectionForm = () => {
                 sanctionLoad: "",
                 loadType: "Connected Load",
                 connectedLoad: "",
+                sancLoad: "",
+                runningLoad: "",
                 lumpSump: "",
                 mdi: "",
+                previousHistory: "",
                 checkedBy: loggedInUser.user_id || "",
                 observation: "",
                 basisOfAssessment: "",
@@ -249,11 +279,18 @@ const DetectionForm = () => {
 
                 if (values.loadType === "Connected Load") {
                   finalConnectedLoad = values.connectedLoad;
+                } else if (values.loadType === "Sanc Load") {
+                  finalConnectedLoad = values.sancLoad;
+                } else if (values.loadType === "Running Load") {
+                  finalConnectedLoad = values.runningLoad;
                 } else if (values.loadType === "Lump Sump") {
                   finalConnectedLoad = values.lumpSump;
+                } else if (values.loadType === "Previous Histoy") {
+                  finalConnectedLoad = values.previousHistory;
                 } else if (values.loadType === "MDI") {
                   finalConnectedLoad = values.mdi;
                 }
+
                 const payload = {
                   refno: values.refNo,
                   cons_name: values.consumerName,
@@ -851,7 +888,7 @@ const DetectionForm = () => {
                           {values.loadType === "Sanc Load" && (
                             <>
                               <label className="form-label fw-bold mb-1">
-                                Sanc. Load (KWh):{" "}
+                                Sanc. Load:{" "}
                                 <span className="text-danger">*</span>
                               </label>
                               <Field name="sancLoad" className="form-control" />
@@ -867,7 +904,7 @@ const DetectionForm = () => {
                           {values.loadType === "Running Load" && (
                             <>
                               <label className="form-label fw-bold mb-1">
-                                Running Load (KWh):{" "}
+                                Running Load:{" "}
                                 <span className="text-danger">*</span>
                               </label>
                               <Field
@@ -886,7 +923,7 @@ const DetectionForm = () => {
                           {values.loadType === "Lump Sump" && (
                             <>
                               <label className="form-label fw-bold mb-1">
-                                Lump Sump (KWh):{" "}
+                                Lump Sump:{" "}
                                 <span className="text-danger">*</span>
                               </label>
                               <Field name="lumpSump" className="form-control" />
@@ -902,7 +939,7 @@ const DetectionForm = () => {
                           {values.loadType === "Previous Histoy" && (
                             <>
                               <label className="form-label fw-bold mb-1">
-                                Previous History Units (KWh):{" "}
+                                Previous History Units:{" "}
                                 <span className="text-danger">*</span>
                               </label>
                               <Field
@@ -921,8 +958,7 @@ const DetectionForm = () => {
                           {values.loadType === "MDI" && (
                             <>
                               <label className="form-label fw-bold mb-1">
-                                MDI (KWh):{" "}
-                                <span className="text-danger">*</span>
+                                MDI: <span className="text-danger">*</span>
                               </label>
                               <Field name="mdi" className="form-control" />
                               <ErrorMessage
