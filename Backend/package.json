@@ -19,6 +19,8 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "multer": "^2.0.2",
     "mysql2": "^3.15.2",
     "node-fetch": "^3.3.2"
   },

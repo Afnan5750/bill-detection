@@ -23,7 +23,7 @@ const DetectionForm = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [loadFactor, setLoadFactor] = useState(null);
   const today = new Date().toISOString().split("T")[0];
-  const [previewImage, setPreviewImage] = useState(null);
+  const monthYear = today.slice(0, 7);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -78,34 +78,10 @@ const DetectionForm = () => {
       .length(14, "Reference No must be 14 digits")
       .required("Reference No is required"),
 
-    loadType: Yup.string().required("Please select a load type"),
-
     connectedLoad: Yup.number()
       .typeError("Must be a number")
       .min(0, "Connected load cannot be negative")
-      .when("loadType", {
-        is: "Connected Load",
-        then: (schema) => schema.required("Connected Load is required"),
-        otherwise: (schema) => schema.nullable().optional(),
-      }),
-
-    lumpSump: Yup.number()
-      .typeError("Must be a number")
-      .min(0, "Lump Sump cannot be negative")
-      .when("loadType", {
-        is: "Lump Sump",
-        then: (schema) => schema.required("Lump Sump is required"),
-        otherwise: (schema) => schema.nullable().optional(),
-      }),
-
-    mdi: Yup.number()
-      .typeError("Must be a number")
-      .min(0, "MDI cannot be negative")
-      .when("loadType", {
-        is: "MDI",
-        then: (schema) => schema.required("MDI is required"),
-        otherwise: (schema) => schema.nullable().optional(),
-      }),
+      .required("Connected Load is required"),
 
     charging_prd_days: Yup.number()
       .typeError("Must be a number")
@@ -120,17 +96,21 @@ const DetectionForm = () => {
     checkedBy: Yup.string().required("Checked By is required"),
     observation: Yup.string().required("Observation is required"),
     basisOfAssessment: Yup.string().required("Basis of Assessment is required"),
-    noticeIssueNo: Yup.string().nullable().optional(),
-    noticeDate: Yup.date().nullable().optional(),
+    noticeIssueNo: Yup.string().required("Notice Issue No is required"),
+    noticeDate: Yup.date().required("Notice Date is required"),
     det_start_dt: Yup.date().required("Start date is required"),
     det_end_dt: Yup.date()
       .required("End date is required")
-      .min(
-        Yup.ref("det_start_dt"),
-        "Select Observation Made before Detection Month"
-      ),
+      .min(Yup.ref("det_start_dt"), "End date must be after start date"),
+
+    unitsChargeable: Yup.number().test(
+      "non-negative",
+      "Units Chargeable cannot be negative",
+      (v) => v >= 0
+    ),
   });
 
+  // Hard-coded fallback durations
   const defectDurations = {
     Slowness: 2,
     "Defective Meter": 2,
@@ -168,9 +148,7 @@ const DetectionForm = () => {
             setBillHistory(
               res.data.billHistory.map((item) => ({
                 month: item.b_month,
-                reading: item.reading,
                 units: item.units_charged,
-                mdi: item.mdi,
               }))
             );
           }
@@ -221,10 +199,7 @@ const DetectionForm = () => {
                 tariff: "",
                 tariffCode: "",
                 sanctionLoad: "",
-                loadType: "Connected Load",
                 connectedLoad: "",
-                lumpSump: "",
-                mdi: "",
                 checkedBy: loggedInUser.user_id || "",
                 observation: "",
                 basisOfAssessment: "",
@@ -236,30 +211,20 @@ const DetectionForm = () => {
                 totalUnitsAlreadyCharged: "",
                 unitsChargeable: "",
                 noticeIssueNo: "",
-                noticeDate: "",
+                noticeDate: today,
                 tempAppliance: "",
                 tempQuantity: "",
                 tempWatts: "",
-                notice_checkbox: false,
               }}
               enableReinitialize
               validationSchema={validationSchema}
               onSubmit={async (values, { resetForm }) => {
-                let finalConnectedLoad = "";
-
-                if (values.loadType === "Connected Load") {
-                  finalConnectedLoad = values.connectedLoad;
-                } else if (values.loadType === "Lump Sump") {
-                  finalConnectedLoad = values.lumpSump;
-                } else if (values.loadType === "MDI") {
-                  finalConnectedLoad = values.mdi;
-                }
                 const payload = {
                   refno: values.refNo,
                   cons_name: values.consumerName,
                   tariff: values.tariffCode,
                   sanction_load: values.sanctionLoad,
-                  connected_load: finalConnectedLoad,
+                  connected_load: values.connectedLoad,
                   checked_by: values.checkedBy,
                   remarks: values.basisOfAssessment,
                   reason_id: values.observation,
@@ -275,12 +240,9 @@ const DetectionForm = () => {
                   modified_by: "admin",
                   det_start_dt: values.det_start_dt,
                   det_end_dt: values.det_end_dt,
-                  notice_checkbox: values.notice_checkbox ? 1 : 0,
                   billHistory: billHistory.map((item) => ({
                     month: item.month,
-                    reading: item.reading,
                     units: item.units,
-                    mdi: item.mdi,
                   })),
                 };
 
@@ -335,15 +297,9 @@ const DetectionForm = () => {
                         if (res.data.detection) {
                           const d = res.data.detection;
 
+                          // Simple helper
                           const toMonth = (date) =>
                             date ? date.slice(0, 7) : "";
-
-                          const addOneDay = (dateStr) => {
-                            if (!dateStr) return "";
-                            const date = new Date(dateStr);
-                            date.setDate(date.getDate() + 1);
-                            return date.toISOString().slice(0, 10);
-                          };
 
                           setFieldValue("refNo", d.refno || "");
                           setFieldValue("consumerName", d.cons_name || "");
@@ -358,16 +314,14 @@ const DetectionForm = () => {
                           setFieldValue("observation", d.reason_id || "");
                           setFieldValue("basisOfAssessment", d.remarks || "");
 
+                          // CORRECT WAY TO SHOW MONTH
                           setFieldValue(
                             "det_start_dt",
                             toMonth(d.det_start_dt)
                           );
                           setFieldValue("det_end_dt", toMonth(d.det_end_dt));
-                          setFieldValue(
-                            "noticeDate",
-                            addOneDay(d.det_notice_dt)
-                          );
-                          setFieldValue("b_month", addOneDay(d.b_month));
+                          setFieldValue("noticeDate", toMonth(d.det_notice_dt));
+                          setFieldValue("b_month", toMonth(d.b_month));
 
                           setFieldValue(
                             "charging_prd_days",
@@ -386,10 +340,6 @@ const DetectionForm = () => {
                             d.units_chargeable || ""
                           );
                           setFieldValue("noticeIssueNo", d.det_notice_no || "");
-                          setFieldValue(
-                            "notice_checkbox",
-                            d.notice_checkbox == 1
-                          );
                         }
                       })
                       .catch((err) => {
@@ -398,22 +348,6 @@ const DetectionForm = () => {
                       });
                   }
                 }, [id, setFieldValue]);
-
-                useEffect(() => {
-                  if (!values.notice_checkbox) {
-                    setFieldValue("noticeIssueNo", "");
-                    setFieldValue("noticeImage", null);
-                    setFieldValue("noticeDate", "");
-                    setPreviewImage(null);
-                  }
-                }, [values.notice_checkbox, setFieldValue]);
-
-                useEffect(() => {
-                  setFieldValue("connectedLoad", "");
-                  setFieldValue("lumpSump", "");
-                  setFieldValue("mdi", "");
-                  setAppliances([]);
-                }, [values.loadType, setFieldValue]);
 
                 useEffect(() => {
                   const ref = values.refNo.trim();
@@ -489,9 +423,7 @@ const DetectionForm = () => {
                         ) {
                           const formattedHistory = histData.map((item) => ({
                             month: item.BILL_MONTH || item.MONTH || "N/A",
-                            reading: item.READING || item.READING || "0",
                             units: item.UNITS || item.UNITS_CHARGED || "0",
-                            mdi: item.MDI || item.MDI || "0",
                           }));
                           setBillHistory(formattedHistory);
                         } else {
@@ -568,20 +500,11 @@ const DetectionForm = () => {
                 }, [values.tariffCode]);
 
                 useEffect(() => {
-                  let loadValue = 0;
-
-                  if (values.loadType === "Connected Load") {
-                    loadValue = parseFloat(values.connectedLoad) || 0;
-                  } else if (values.loadType === "Lump Sump") {
-                    loadValue = parseFloat(values.lumpSump) || 0;
-                  } else if (values.loadType === "MDI") {
-                    loadValue = parseFloat(values.mdi) || 0;
-                  }
-
+                  const connected = parseFloat(values.connectedLoad) || 0;
                   const days = parseFloat(values.charging_prd_days) || 0;
 
-                  if (loadValue > 0 && loadFactor && days > 0) {
-                    const totalUnits = loadValue * loadFactor * days * 730;
+                  if (connected > 0 && loadFactor && days > 0) {
+                    const totalUnits = connected * loadFactor * days * 730;
                     setFieldValue(
                       "totalUnitsChargeable",
                       Math.round(totalUnits)
@@ -590,19 +513,19 @@ const DetectionForm = () => {
                     setFieldValue("totalUnitsChargeable", "");
                   }
                 }, [
-                  values.loadType,
                   values.connectedLoad,
-                  values.lumpSump,
-                  values.mdi,
                   loadFactor,
                   values.charging_prd_days,
                   setFieldValue,
                 ]);
 
+                // Auto-calculate start detection month based on observation and end detection month
+
                 useEffect(() => {
                   const reasonId = values.observation;
                   const endDate = values.det_end_dt;
 
+                  // Need all 3 to calculate
                   if (!reasonId || !endDate || !reasonList.length) {
                     return;
                   }
@@ -622,11 +545,12 @@ const DetectionForm = () => {
                   if (duration === 0) return;
 
                   const [endYear, endMonth] = endDate.split("-").map(Number);
-                  const endMonthIndex = endMonth - 1;
+                  const endMonthIndex = endMonth - 1; // JS months are 0-indexed
 
                   let startMonthIndex = endMonthIndex - (duration - 1);
                   let startYear = endYear;
 
+                  // Handle year rollover
                   if (startMonthIndex < 0) {
                     startMonthIndex += 12;
                     startYear -= 1;
@@ -644,6 +568,7 @@ const DetectionForm = () => {
                   setFieldValue,
                 ]);
 
+                // Fetch bill history and calculate total units for selected period
                 useEffect(() => {
                   if (
                     !values.refNo ||
@@ -713,6 +638,7 @@ const DetectionForm = () => {
                         totalUnits
                       );
 
+                      // ✅ Set total units in Formik field
                       setFieldValue("totalUnitsAlreadyCharged", totalUnits);
                     } catch (error) {
                       console.error("❌ Error fetching bill history:", error);
@@ -775,7 +701,7 @@ const DetectionForm = () => {
                       <div className="row">
                         <div className="col-md-6 mb-3">
                           <label className="form-label fw-bold">
-                            Sanction Load (KW):
+                            Sanction Load (KWh):
                           </label>
                           <Field
                             name="sanctionLoad"
@@ -785,153 +711,36 @@ const DetectionForm = () => {
                         </div>
 
                         <div className="col-md-6 mb-3">
-                          <label className="form-label fw-bold mb-2">
-                            Select Load Type:{" "}
-                            <span className="text-danger">*</span>
-                          </label>
-
+                          <div className="d-flex justify-content-between align-items-center mb-1">
+                            <label className="form-label fw-bold mb-0">
+                              Connected Load (KWh):
+                              <span className="text-danger"> *</span>
+                            </label>
+                            <button
+                              type="button"
+                              className="btn btn-sm "
+                              onClick={() => setShowModal(true)}
+                              style={{
+                                backgroundColor: "#212529",
+                                color: "#fff",
+                                borderColor: "#212529",
+                                width: "100px",
+                                borderRadius: "50px",
+                                fontWeight: "600",
+                              }}
+                            >
+                              Add
+                            </button>
+                          </div>
                           <Field
-                            as="select"
-                            name="loadType"
-                            className="form-select mb-3"
-                          >
-                            <option value="Connected Load">
-                              Connected Load
-                            </option>
-                            <option value="Sanc Load">Sanc. Load</option>
-                            <option value="Running Load">Running Load</option>
-                            <option value="Lump Sump">
-                              Data Retrieval (Lump Sump)
-                            </option>
-                            <option value="Previous Histoy">
-                              Previous Histoy
-                            </option>
-                            <option value="MDI">MDI Recorded</option>
-                          </Field>
-
-                          {/* Connected Load */}
-                          {values.loadType === "Connected Load" && (
-                            <>
-                              <div className="d-flex justify-content-between align-items-center mb-1">
-                                <label className="form-label fw-bold mb-0">
-                                  Connected Load (KWh):{" "}
-                                  <span className="text-danger">*</span>
-                                </label>
-                                <button
-                                  type="button"
-                                  className="btn btn-sm"
-                                  onClick={() => setShowModal(true)}
-                                  style={{
-                                    backgroundColor: "#212529",
-                                    color: "#fff",
-                                    borderColor: "#212529",
-                                    width: "100px",
-                                    borderRadius: "50px",
-                                    fontWeight: "600",
-                                  }}
-                                >
-                                  Add
-                                </button>
-                              </div>
-
-                              <Field
-                                name="connectedLoad"
-                                className="form-control readonly-field"
-                                readOnly
-                              />
-                              <ErrorMessage
-                                name="connectedLoad"
-                                component="div"
-                                className="text-danger small"
-                              />
-                            </>
-                          )}
-
-                          {/* Sanc. Load */}
-                          {values.loadType === "Sanc Load" && (
-                            <>
-                              <label className="form-label fw-bold mb-1">
-                                Sanc. Load (KWh):{" "}
-                                <span className="text-danger">*</span>
-                              </label>
-                              <Field name="sancLoad" className="form-control" />
-                              <ErrorMessage
-                                name="sancLoad"
-                                component="div"
-                                className="text-danger small"
-                              />
-                            </>
-                          )}
-
-                          {/* Running Load (NEW) */}
-                          {values.loadType === "Running Load" && (
-                            <>
-                              <label className="form-label fw-bold mb-1">
-                                Running Load (KWh):{" "}
-                                <span className="text-danger">*</span>
-                              </label>
-                              <Field
-                                name="runningLoad"
-                                className="form-control"
-                              />
-                              <ErrorMessage
-                                name="runningLoad"
-                                component="div"
-                                className="text-danger small"
-                              />
-                            </>
-                          )}
-
-                          {/* Lump Sump */}
-                          {values.loadType === "Lump Sump" && (
-                            <>
-                              <label className="form-label fw-bold mb-1">
-                                Lump Sump (KWh):{" "}
-                                <span className="text-danger">*</span>
-                              </label>
-                              <Field name="lumpSump" className="form-control" />
-                              <ErrorMessage
-                                name="lumpSump"
-                                component="div"
-                                className="text-danger small"
-                              />
-                            </>
-                          )}
-
-                          {/* Previous History */}
-                          {values.loadType === "Previous Histoy" && (
-                            <>
-                              <label className="form-label fw-bold mb-1">
-                                Previous History Units (KWh):{" "}
-                                <span className="text-danger">*</span>
-                              </label>
-                              <Field
-                                name="previousHistory"
-                                className="form-control"
-                              />
-                              <ErrorMessage
-                                name="previousHistory"
-                                component="div"
-                                className="text-danger small"
-                              />
-                            </>
-                          )}
-
-                          {/* MDI */}
-                          {values.loadType === "MDI" && (
-                            <>
-                              <label className="form-label fw-bold mb-1">
-                                MDI (KWh):{" "}
-                                <span className="text-danger">*</span>
-                              </label>
-                              <Field name="mdi" className="form-control" />
-                              <ErrorMessage
-                                name="mdi"
-                                component="div"
-                                className="text-danger small"
-                              />
-                            </>
-                          )}
+                            name="connectedLoad"
+                            className="form-control"
+                          />
+                          <ErrorMessage
+                            name="connectedLoad"
+                            component="div"
+                            className="text-danger small"
+                          />
                         </div>
                       </div>
 
@@ -996,7 +805,7 @@ const DetectionForm = () => {
                       </div>
 
                       <div className="row mb-3">
-                        <div className="col-md-4" style={{ display: "none" }}>
+                        <div className="col-md-4">
                           <label className="form-label fw-bold">
                             Start Detection Month:
                             <span className="text-danger"> *</span>
@@ -1013,30 +822,16 @@ const DetectionForm = () => {
                           />
                         </div>
 
-                        <div className="col-md-6">
+                        <div className="col-md-4">
                           <label className="form-label fw-bold">
-                            Detection Month:
+                            End Detection Month:
                             <span className="text-danger"> *</span>
                           </label>
                           <Field
                             name="det_end_dt"
                             type="month"
                             className="form-control"
-                            max={(() => {
-                              const today = new Date();
-                              let year = today.getFullYear();
-                              let month = today.getMonth();
-                              if (month === 0) {
-                                year -= 1;
-                                month = 12;
-                              }
-                              return `${year}-${String(month).padStart(
-                                2,
-                                "0"
-                              )}`;
-                            })()}
                           />
-
                           <ErrorMessage
                             name="det_end_dt"
                             component="div"
@@ -1044,7 +839,7 @@ const DetectionForm = () => {
                           />
                         </div>
 
-                        <div className="col-md-6">
+                        <div className="col-md-4">
                           <label className="form-label fw-bold">
                             Bill Month:
                           </label>
@@ -1069,7 +864,7 @@ const DetectionForm = () => {
                           </label>
                           <Field
                             name="charging_prd_days"
-                            className="form-control readonly-field"
+                            className="form-control"
                             readOnly
                           />
                           {/* <ErrorMessage
@@ -1086,8 +881,9 @@ const DetectionForm = () => {
                           <Field
                             name="totalUnitsChargeable"
                             type="number"
-                            className="form-control readonly-field"
+                            className="form-control"
                             readOnly
+                            style={{ backgroundColor: "#f0f0f0" }}
                           />
                           {/* <ErrorMessage
                             name="totalUnitsChargeable"
@@ -1096,52 +892,29 @@ const DetectionForm = () => {
                           /> */}
 
                           {loadFactor &&
-                            ((values.loadType === "Connected Load" &&
-                              values.connectedLoad) ||
-                              (values.loadType === "Lump Sump" &&
-                                values.lumpSump) ||
-                              (values.loadType === "MDI" && values.mdi)) && (
+                            values.connectedLoad &&
+                            values.charging_prd_days && (
                               <div className="mt-2 p-2 bg-light border rounded small">
                                 <strong>Formula:</strong>
                                 <br />
                                 <code>
-                                  {(() => {
-                                    let load = 0;
-                                    let label = "";
-                                    if (values.loadType === "Connected Load") {
-                                      load = values.connectedLoad;
-                                      label = "Connected Load";
-                                    } else if (
-                                      values.loadType === "Lump Sump"
-                                    ) {
-                                      load = values.lumpSump;
-                                      label = "Lump Sump";
-                                    } else if (values.loadType === "MDI") {
-                                      load = values.mdi;
-                                      label = "MDI";
-                                    }
-                                    return (
-                                      <>
-                                        {load} ({label}) ×{" "}
-                                        {Number(loadFactor).toFixed(2)} ×{" "}
-                                        {values.charging_prd_days} × 730
-                                        {" = "}
-                                        <span className="text-primary fw-bold">
-                                          {Math.round(
-                                            load *
-                                              loadFactor *
-                                              values.charging_prd_days *
-                                              730
-                                          )}
-                                        </span>
-                                      </>
-                                    );
-                                  })()}
+                                  {values.connectedLoad} ×{" "}
+                                  {Number(loadFactor).toFixed(2)} ×{" "}
+                                  {values.charging_prd_days} × 730
+                                  {" = "}
+                                  <span className="text-primary fw-bold">
+                                    {Math.round(
+                                      values.connectedLoad *
+                                        loadFactor *
+                                        values.charging_prd_days *
+                                        730
+                                    )}
+                                  </span>
                                 </code>
                                 <br />
                                 <small className="text-muted">
-                                  Load (kW) × Load Factor × Months × 730
-                                  hrs/month
+                                  Connected Load (kW) × Load Factor × Months ×
+                                  730 hrs/month
                                 </small>
                               </div>
                             )}
@@ -1161,7 +934,7 @@ const DetectionForm = () => {
                         </div>
                         <div className="col-md-6 mb-3">
                           <label className="form-label fw-bold">
-                            Units To be Charged:
+                            Units Chargeable:
                           </label>
                           <Field
                             name="unitsChargeable"
@@ -1176,101 +949,39 @@ const DetectionForm = () => {
                         </div>
                       </div>
 
-                      <div className="row align-items-center mb-3">
-                        <div className="col-md-6 d-flex align-items-center gap-2">
-                          <Field
-                            type="checkbox"
-                            name="notice_checkbox"
-                            className="form-check-input"
-                            id="showNotice"
-                          />
-                          <label
-                            htmlFor="showNotice"
-                            className="form-check-label fw-semibold mb-0"
-                          >
-                            Is Notice Issued?
+                      <div className="row">
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label fw-bold">
+                            Notice Issue No:
+                            <span className="text-danger"> *</span>
                           </label>
+                          <Field
+                            name="noticeIssueNo"
+                            className="form-control"
+                          />
+                          <ErrorMessage
+                            name="noticeIssueNo"
+                            component="div"
+                            className="text-danger small"
+                          />
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label fw-bold">
+                            Dated:<span className="text-danger"> *</span>
+                          </label>
+                          <Field
+                            name="noticeDate"
+                            type="date"
+                            className="form-control"
+                            max={today}
+                          />
+                          <ErrorMessage
+                            name="noticeDate"
+                            component="div"
+                            className="text-danger small"
+                          />
                         </div>
                       </div>
-
-                      {values.notice_checkbox && (
-                        <div className="row">
-                          <div className="col-md-6">
-                            <label className="form-label fw-bold mb-0">
-                              Notice Date:{" "}
-                            </label>
-                            <Field
-                              name="noticeDate"
-                              type="date"
-                              className="form-control"
-                              max={today}
-                            />
-                            <ErrorMessage
-                              name="noticeDate"
-                              component="div"
-                              className="text-danger small"
-                            />
-                          </div>
-                          {/* Notice Issue No */}
-                          <div className="col-md-6 mb-3">
-                            <label className="form-label fw-bold">
-                              Notice Issue No:{" "}
-                            </label>
-                            <Field
-                              name="noticeIssueNo"
-                              className="form-control"
-                            />
-                            <ErrorMessage
-                              name="noticeIssueNo"
-                              component="div"
-                              className="text-danger small"
-                            />
-                          </div>
-
-                          {/* Image Upload */}
-                          <div className="col-md-6 mb-3">
-                            <label className="form-label fw-bold">
-                              Upload Notice Image:{" "}
-                            </label>
-                            <input
-                              type="file"
-                              name="noticeImage"
-                              className="form-control"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.currentTarget.files[0];
-                                if (file) {
-                                  setFieldValue("noticeImage", file);
-                                  const reader = new FileReader();
-                                  reader.onload = (ev) =>
-                                    setPreviewImage(ev.target.result);
-                                  reader.readAsDataURL(file);
-                                }
-                              }}
-                            />
-                            <ErrorMessage
-                              name="noticeImage"
-                              component="div"
-                              className="text-danger small"
-                            />
-                            {previewImage && (
-                              <div className="mt-2 text-center">
-                                <img
-                                  src={previewImage}
-                                  alt="Preview"
-                                  style={{
-                                    width: "100px",
-                                    height: "100px",
-                                    objectFit: "cover",
-                                    borderRadius: "8px",
-                                    border: "1px solid #ccc",
-                                  }}
-                                />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
 
                       {billHistory.length > 0 && (
                         <>
@@ -1296,17 +1007,7 @@ const DetectionForm = () => {
                                     <th
                                       style={{ backgroundColor: "#afb0b3ff" }}
                                     >
-                                      Reading
-                                    </th>
-                                    <th
-                                      style={{ backgroundColor: "#afb0b3ff" }}
-                                    >
                                       Units Charged
-                                    </th>
-                                    <th
-                                      style={{ backgroundColor: "#afb0b3ff" }}
-                                    >
-                                      MDI
                                     </th>
                                     {colIndex < arr.length - 1 && (
                                       <th className="bg-light"></th>
@@ -1328,10 +1029,8 @@ const DetectionForm = () => {
                                       <React.Fragment
                                         key={`cell-${rowIndex}-${colIndex}`}
                                       >
-                                        <td>{item?.month ?? ""}</td>
-                                        <td>{item?.reading ?? ""}</td>
-                                        <td>{item?.units ?? ""}</td>
-                                        <td>{item?.mdi ?? ""}</td>
+                                        <td>{item?.month || ""}</td>
+                                        <td>{item?.units || ""}</td>
                                         {colIndex < arr.length - 1 && (
                                           <td className="bg-light"></td>
                                         )}

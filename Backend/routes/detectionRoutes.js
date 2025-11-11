@@ -104,6 +104,7 @@ router.post("/submit", (req, res) => {
     det_end_dt,
     b_month,
     billHistory,
+    notice_checkbox,
   } = req.body;
 
   // 1️⃣ Check if record with same refno and b_month already exists
@@ -123,15 +124,16 @@ router.post("/submit", (req, res) => {
 
     // 2️⃣ Proceed with insertion if no duplicate
     const sqlDetection = `
-      INSERT INTO tbl_detection_trx (
-        refno, cons_name, tariff, sanction_load, connected_load,
-        checked_by, remarks, reason_id, charging_prd_days, units_assessed,
-        units_already_charged, units_chargeable, det_notice_no, det_notice_dt,
-        created_by, approved_by, modified_by, det_start_dt, det_end_dt, b_month,
-        created_dt, approved_dt, modified_dt
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())
-    `;
+  INSERT INTO tbl_detection_trx (
+    refno, cons_name, tariff, sanction_load, connected_load,
+    checked_by, remarks, reason_id, charging_prd_days, units_assessed,
+    units_already_charged, units_chargeable, det_notice_no, det_notice_dt,
+    created_by, approved_by, modified_by, det_start_dt, det_end_dt, b_month,
+    notice_checkbox,
+    created_dt, approved_dt, modified_dt
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())
+`;
 
     const detectionValues = [
       refno,
@@ -154,6 +156,7 @@ router.post("/submit", (req, res) => {
       det_start_dt,
       det_end_dt,
       b_month,
+      notice_checkbox || 0,
     ];
 
     db.query(sqlDetection, detectionValues, (err2, result2) => {
@@ -169,11 +172,13 @@ router.post("/submit", (req, res) => {
         const billValues = billHistory.map((item) => [
           monthYearToDateString(item.month),
           item.units,
+          item.reading,
+          item.mdi,
           det_trx_id,
         ]);
 
         const sqlBillHistory = `
-          INSERT INTO units_cons_hist (b_month, units_charged, det_trx_id)
+          INSERT INTO units_cons_hist (b_month, units_charged, reading, mdi, det_trx_id)
           VALUES ?
         `;
 
@@ -209,7 +214,9 @@ router.get("/detection/:id", (req, res) => {
   const sqlBillHistory = `
     SELECT 
       DATE_FORMAT(b_month, '%Y-%m') AS b_month, 
-      units_charged 
+      units_charged, 
+      reading,
+      mdi
     FROM units_cons_hist 
     WHERE det_trx_id = ? 
     ORDER BY b_month ASC
@@ -235,7 +242,9 @@ router.get("/detection/:id", (req, res) => {
         detection: detectionResult[0],
         billHistory: billHistoryResult.map((row) => ({
           ...row,
-          b_month: row.b_month || "", // ensure string
+          b_month: row.b_month || "",
+          reading: row.reading,
+          mdi: row.mdi,
         })),
       });
     });
@@ -265,17 +274,19 @@ router.put("/update/:id", (req, res) => {
     det_start_dt,
     det_end_dt,
     billHistory,
+    notice_checkbox,
   } = req.body;
 
   const sqlUpdate = `
-    UPDATE tbl_detection_trx SET
-      refno = ?, cons_name = ?, tariff = ?, sanction_load = ?, connected_load = ?,
-      checked_by = ?, remarks = ?, reason_id = ?, charging_prd_days = ?, units_assessed = ?,
-      units_already_charged = ?, units_chargeable = ?, det_notice_no = ?, det_notice_dt = ?,
-      created_by = ?, approved_by = ?, modified_by = ?, det_start_dt = ?, det_end_dt = ?,
-      approved_dt = NOW(), modified_dt = NOW()
-    WHERE id = ?
-  `;
+  UPDATE tbl_detection_trx SET
+    refno = ?, cons_name = ?, tariff = ?, sanction_load = ?, connected_load = ?,
+    checked_by = ?, remarks = ?, reason_id = ?, charging_prd_days = ?, units_assessed = ?,
+    units_already_charged = ?, units_chargeable = ?, det_notice_no = ?, det_notice_dt = ?,
+    created_by = ?, approved_by = ?, modified_by = ?, det_start_dt = ?, det_end_dt = ?,
+    notice_checkbox = ?, 
+    approved_dt = NOW(), modified_dt = NOW()
+  WHERE id = ?
+`;
 
   const updateValues = [
     refno,
@@ -297,6 +308,7 @@ router.put("/update/:id", (req, res) => {
     modified_by,
     det_start_dt,
     det_end_dt,
+    notice_checkbox || 0,
     id,
   ];
 
@@ -322,11 +334,13 @@ router.put("/update/:id", (req, res) => {
         const billValues = billHistory.map((item) => [
           monthYearToDateString(item.month),
           item.units,
+          item.reading,
+          item.mdi,
           id,
         ]);
 
         const sqlBillHistory = `
-          INSERT INTO units_cons_hist (b_month, units_charged, det_trx_id)
+          INSERT INTO units_cons_hist (b_month, units_charged, reading, mdi ,det_trx_id)
           VALUES ?
         `;
 
